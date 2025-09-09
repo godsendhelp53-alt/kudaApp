@@ -1,3 +1,4 @@
-const BASE_URL = "https://kuda-server-gilt.vercel.app";
+const BASE_URL = "https://kuda-server-ten.vercel.app";
 
 export default BASE_URL;
+
